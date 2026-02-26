@@ -5,8 +5,11 @@ public class Match {
     private final String awayTeam;
 
     public Match(String homeTeam, String awayTeam) {
-        this.homeTeam = homeTeam;
-        this.awayTeam = awayTeam;
+        String normalizedHomeTeam = validateAndNormalizeTeamName(homeTeam);
+        String normalizedAwayTeam = validateAndNormalizeTeamName(awayTeam);
+
+        this.homeTeam = normalizedHomeTeam;
+        this.awayTeam = normalizedAwayTeam;
     }
 
     public String getHomeTeam() {
@@ -23,5 +26,19 @@ public class Match {
 
     public int getAwayScore() {
         return 0;
+    }
+
+    public static String validateAndNormalizeTeamName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Team name cannot be null or empty");
+        }
+
+        String normalized = name.trim();
+
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("Team name cannot be null or empty");
+        }
+
+        return normalized;
     }
 }
