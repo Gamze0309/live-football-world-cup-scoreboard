@@ -3,6 +3,7 @@ package org.scoreboard.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -59,5 +60,19 @@ public class MatchTest {
     void shouldNormalizeAwayTeamNameByTrimmingWhitespace() {
         Match match = new Match("Mexico", "Canada ");
         assertEquals("Canada", match.getAwayTeam());
+    }
+
+    @Test
+    void shouldRejectSameTeamNames() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> new Match("Canada", "Canada"));
+        assertTrue(exception.getMessage().contains("Team names cannot be same"));
+    }
+
+    @Test
+    void shouldRejectSameTeamNamesIgnoringCase() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> new Match("Canada", "canada"));
+        assertTrue(exception.getMessage().contains("Team names cannot be same"));
     }
 }
