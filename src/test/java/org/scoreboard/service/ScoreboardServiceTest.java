@@ -10,6 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.scoreboard.model.Match;
 
 @DisplayName("ScoreBoardService")
@@ -146,6 +149,30 @@ public class ScoreboardServiceTest {
         scoreBoardService.updateScore("Mexico ", " Germany", 3, 3);
 
         assertEquals(3, scoreBoardService.getAllMatches().get(0).getHomeScore());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = " ")
+    @DisplayName("should reject invalid home team name on update score")
+    void shouldRejectInvalidHomeTeamNameOnUpdateScore(String invalidHome) {
+        scoreBoardService.startMatch("Canada", "Brazil");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> scoreBoardService.updateScore(invalidHome, "Brazil", 1, 1));
+        assertEquals("Team name cannot be null or empty", exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = " ")
+    @DisplayName("should reject invalid away team name on updateScore")
+    void shouldRejectInvalidAwayTeamNameOnUpdateScore(String invalidAway) {
+        scoreBoardService.startMatch("Canada", "Brazil");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> scoreBoardService.updateScore("Canada", invalidAway, 1, 1));
+        assertEquals("Team name cannot be null or empty", exception.getMessage());
     }
 
     @Test
