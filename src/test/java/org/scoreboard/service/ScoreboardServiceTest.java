@@ -244,4 +244,47 @@ public class ScoreboardServiceTest {
 
         assertEquals(0, scoreBoardService.getAllMatches().size());
     }
+
+    @Test
+    @DisplayName("should throw when match does not exist")
+    void shouldThrowWhenMatchNotFound() {
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> scoreBoardService.finishMatch("Brazil", "Turkey"));
+        assertTrue(exception.getMessage().contains("not found"));
+    }
+
+    @Test
+    @DisplayName("should throw when finishing already finished match")
+    void shouldThrowWhenFinishingAlreadyFinished() {
+        scoreBoardService.startMatch("Mexico", "Canada");
+        scoreBoardService.finishMatch("Mexico", "Canada");
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> scoreBoardService.finishMatch("Mexico", "Canada"));
+        assertTrue(exception.getMessage().contains("not found"));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = " ")
+    @DisplayName("should reject invalid home team name")
+    void shouldRejectInvalidHomeTeamName(String invalidHome) {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> scoreBoardService.finishMatch(invalidHome, "Argentina"));
+        assertEquals("Team name cannot be null or empty", exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = " ")
+    @DisplayName("should reject invalid away team name")
+    void shouldRejectInvalidAwayTeamName(String invalidAway) {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> scoreBoardService.finishMatch("Brazil", invalidAway));
+        assertEquals("Team name cannot be null or empty", exception.getMessage());
+    }
 }

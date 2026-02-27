@@ -60,5 +60,7 @@ public class ScoreboardService {
                     return;
             }
         }
+
+        throw new IllegalStateException("Match between " + homeTeam + " and " + awayTeam + " not found");
     }
 }
