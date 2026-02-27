@@ -4,20 +4,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@DisplayName("Match")
 public class MatchTest {
 
     @Test
+    @DisplayName("should instantiate match")
     void shouldInstantiateMatch() {
         Match match = new Match("Mexico", "Canada");
         assertNotNull(match, "Match instance should have been created");
     }
 
     @Test
+    @DisplayName("should return team names from getters")
     void shouldReturnTeamNamesFromGetters() {
         Match match = new Match("Mexico", "Canada");
         assertEquals("Mexico", match.getHomeTeam());
@@ -25,6 +29,7 @@ public class MatchTest {
     }
     
     @Test
+    @DisplayName("should create match with initial score 0-0")
     void shouldInitializeScoresToZero() {
         Match match = new Match("Mexico", "Canada");
 
@@ -35,6 +40,7 @@ public class MatchTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = " ")
+    @DisplayName("should reject invalid home team name")
     void shouldRejectInvalidHomeTeamName(String invalidHome) {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> new Match(invalidHome, "Turkey"));
@@ -44,6 +50,7 @@ public class MatchTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = " ")
+    @DisplayName("should reject invalid away team name")
     void shouldRejectInvalidAwayTeamName(String invalidAway) {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> new Match("Germany", invalidAway));
@@ -51,18 +58,21 @@ public class MatchTest {
     }
 
     @Test
+    @DisplayName("should normalize home team name by trimming whitespace")
     void shouldNormalizeHomeTeamNameByTrimmingWhitespace() {
         Match match = new Match("Mexico ", "Canada");
         assertEquals("Mexico", match.getHomeTeam());
     }
 
     @Test
+    @DisplayName("should normalize away team name by trimming whitespace")
     void shouldNormalizeAwayTeamNameByTrimmingWhitespace() {
         Match match = new Match("Mexico", "Canada ");
         assertEquals("Canada", match.getAwayTeam());
     }
 
     @Test
+    @DisplayName("should reject same home and away team")
     void shouldRejectSameTeamNames() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> new Match("Canada", "Canada"));
@@ -70,6 +80,7 @@ public class MatchTest {
     }
 
     @Test
+    @DisplayName("should reject same team names ignoring case")
     void shouldRejectSameTeamNamesIgnoringCase() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> new Match("Canada", "canada"));

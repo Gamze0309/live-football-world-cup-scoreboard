@@ -4,18 +4,22 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.scoreboard.model.Match;
 
+@DisplayName("ScoreBoardService")
 public class ScoreboardServiceTest {
 
     @Test
+    @DisplayName("should instantiate scoreboard service")
     void shouldInstantiateScoreBoardService() {
         ScoreboardService scoreBoardService = new ScoreboardService();
         assertNotNull(scoreBoardService, "ScoreBoardService instance should have been created");
     }
 
     @Test
+    @DisplayName("should return empty matches list initially")
     void shouldReturnEmptyMatchesListInitially() {
         ScoreboardService scoreBoardService = new ScoreboardService();
         List<Match> matches = scoreBoardService.getAllMatches();
@@ -23,6 +27,7 @@ public class ScoreboardServiceTest {
     }
 
     @Test
+    @DisplayName("should add match when startMatch called")
     void shouldAddMatchWhenStartMatchCalled() {
         ScoreboardService scoreBoardService = new ScoreboardService();
         scoreBoardService.startMatch("Brazil", "Argentina");
@@ -32,6 +37,7 @@ public class ScoreboardServiceTest {
     }
 
     @Test
+    @DisplayName("should start match with correct team names")
     void shouldStartMatchWithCorrectTeamNames() {
         ScoreboardService scoreBoardService = new ScoreboardService();
         scoreBoardService.startMatch("Brazil", "Argentina");
