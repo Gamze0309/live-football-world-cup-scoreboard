@@ -4,6 +4,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.scoreboard.model.Match;
@@ -47,5 +49,38 @@ public class ScoreboardServiceTest {
 
         assertEquals("Brazil", match.getHomeTeam(), "Home team name should be 'Brazil'");
         assertEquals("Argentina", match.getAwayTeam(), "Away team name should be 'Argentina'");
+    }
+
+    @Test
+    @DisplayName("should reject when home team already has an active match")
+    void shouldRejectWhenHomeTeamAlreadyActive() {
+        ScoreboardService scoreBoardService = new ScoreboardService();
+        scoreBoardService.startMatch("Brazil", "Argentina");
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> scoreBoardService.startMatch("Brazil", "Canada"));
+        assertTrue(exception.getMessage().contains("already has an active match"));
+    }
+
+    @Test
+    @DisplayName("should reject when away team already has an active match")
+    void shouldRejectWhenAwayTeamAlreadyActive() {
+        ScoreboardService scoreBoardService = new ScoreboardService();
+        scoreBoardService.startMatch("Turkey", "Canada");
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> scoreBoardService.startMatch("Brazil", "Canada"));
+        assertTrue(exception.getMessage().contains("already has an active match"));
+    }
+
+    @Test
+    @DisplayName("should reject duplicate match")
+    void shouldRejectDuplicateMatch() {
+        ScoreboardService scoreBoardService = new ScoreboardService();
+        scoreBoardService.startMatch("Brazil", "Canada");
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+            () -> scoreBoardService.startMatch("Brazil", "Canada"));
+        assertTrue(exception.getMessage().contains("already has an active match"));
     }
 }

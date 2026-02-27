@@ -13,6 +13,17 @@ public class ScoreboardService {
     }
 
     public void startMatch(String homeTeam, String awayTeam) {
+        
+        for (Match match : matches) {
+            if (homeTeam.equals(match.getHomeTeam()) || homeTeam.equals(match.getAwayTeam())) {
+                throw new IllegalStateException("Team " + homeTeam  + " already has an active match");
+            }
+
+            if (awayTeam.equals(match.getHomeTeam()) || awayTeam.equals(match.getAwayTeam())) {
+                throw new IllegalStateException("Team " + awayTeam  + " already has an active match");
+            }
+        }
+
         Match match = new Match(homeTeam, awayTeam);
         matches.add(match);
     }
