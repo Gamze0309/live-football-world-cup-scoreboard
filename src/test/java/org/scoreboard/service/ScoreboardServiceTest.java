@@ -87,6 +87,19 @@ public class ScoreboardServiceTest {
     }
 
     @Test
+    @DisplayName("should detect active teams case-insensitively")
+    void shouldDetectActiveTeamsCaseInsensitively() {
+        scoreBoardService.startMatch("Turkey", "brazil");
+
+        assertAll(
+            () -> assertThrows(IllegalStateException.class,
+                () -> scoreBoardService.startMatch("Brazil", "Canada")),
+            () -> assertThrows(IllegalStateException.class,
+                () -> scoreBoardService.startMatch("Canada", "TURKEY"))
+        );
+    }
+
+    @Test
     @DisplayName("should update match scores")
     void shouldUpdateMatchScores() {
         scoreBoardService.startMatch("Brazil", "Argentina");
