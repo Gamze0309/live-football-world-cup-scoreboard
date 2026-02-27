@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -20,274 +21,289 @@ import org.scoreboard.repository.ScoreboardRepository;
 @DisplayName("ScoreBoardService")
 public class ScoreboardServiceTest {
 
-    private ScoreboardService scoreBoardService;
+    private ScoreboardService scoreboardService;
 
     @BeforeEach
     void setUp() {
         ScoreboardRepository repository = new InMemoryScoreboardRepository();
-        scoreBoardService = new ScoreboardService(repository);
+        scoreboardService = new ScoreboardService(repository);
     }
 
-    @Test
-    @DisplayName("should instantiate scoreboard service")
-    void shouldInstantiateScoreBoardService() {
-        assertNotNull(scoreBoardService, "ScoreBoardService instance should have been created");
+    @Nested
+    @DisplayName("Start Match")
+    class StartMatch {
+
+        @Test
+        @DisplayName("should instantiate scoreboard service")
+        void shouldInstantiateService() {
+            assertNotNull(scoreboardService, "ScoreBoardService instance should have been created");
+        }
+
+        @Test
+        @DisplayName("should return empty matches list initially")
+        void shouldReturnEmptyMatchesListInitially() {
+            List<Match> matches = scoreboardService.getAllMatches();
+            assertEquals(0, matches.size(), "Initial matches list should be empty");
+        }
+
+        @Test
+        @DisplayName("should add match when startMatch called")
+        void shouldAddMatch() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+
+            List<Match> matches = scoreboardService.getAllMatches();
+            assertEquals(1, matches.size(), "Matches list should contain one match after addition");
+        }
+
+        @Test
+        @DisplayName("should start match with correct team names")
+        void shouldStartMatchWithCorrectTeamNames() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+
+            List<Match> matches = scoreboardService.getAllMatches();
+            Match match = matches.get(0);
+
+            assertEquals("Brazil", match.getHomeTeam(), "Home team name should be 'Brazil'");
+            assertEquals("Argentina", match.getAwayTeam(), "Away team name should be 'Argentina'");
+        }
+
+        @Test
+        @DisplayName("should reject when home team already has an active match")
+        void shouldRejectWhenHomeTeamAlreadyActive() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> scoreboardService.startMatch("Brazil", "Canada"));
+            assertTrue(exception.getMessage().contains("already has an active match"));
+        }
+
+        @Test
+        @DisplayName("should reject when away team already has an active match")
+        void shouldRejectWhenAwayTeamAlreadyActive() {
+            scoreboardService.startMatch("Turkey", "Canada");
+
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> scoreboardService.startMatch("Brazil", "Canada"));
+            assertTrue(exception.getMessage().contains("already has an active match"));
+        }
+
+        @Test
+        @DisplayName("should reject duplicate match")
+        void shouldRejectDuplicateMatch() {
+            scoreboardService.startMatch("Brazil", "Canada");
+
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> scoreboardService.startMatch("Brazil", "Canada"));
+            assertTrue(exception.getMessage().contains("already has an active match"));
+        }
+
+        @Test
+        @DisplayName("should detect active teams ignoring case")
+        void shouldDetectActiveTeamsIgnoringCase() {
+            scoreboardService.startMatch("Turkey", "brazil");
+
+            assertAll(
+                () -> assertThrows(IllegalStateException.class,
+                    () -> scoreboardService.startMatch("Brazil", "Canada")),
+                () -> assertThrows(IllegalStateException.class,
+                    () -> scoreboardService.startMatch("Canada", "TURKEY"))
+            );
+        }
     }
 
-    @Test
-    @DisplayName("should return empty matches list initially")
-    void shouldReturnEmptyMatchesListInitially() {
-        List<Match> matches = scoreBoardService.getAllMatches();
-        assertEquals(0, matches.size(), "Initial matches list should be empty");
+    @Nested
+    @DisplayName("Update Score")
+    class UpdateScore {
+
+        @Test
+        @DisplayName("should update match scores")
+        void shouldUpdateScores() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.updateScore("Brazil", "Argentina", 2, 3);
+
+            Match match = scoreboardService.getAllMatches().get(0);
+            assertAll(
+                () -> assertEquals(2, match.getHomeScore()),
+                () -> assertEquals(3, match.getAwayScore())
+            );
+        }
+
+        @Test
+        @DisplayName("should update scores multiple times on same match")
+        void shouldUpdateScoresMultipleTimes() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.updateScore("Brazil", "Argentina", 1, 0);
+            scoreboardService.updateScore("Brazil", "Argentina", 2, 3);
+
+            Match match = scoreboardService.getAllMatches().get(0);
+            assertAll(
+                () -> assertEquals(2, match.getHomeScore()),
+                () -> assertEquals(3, match.getAwayScore())
+            );
+        }
+
+        @Test
+        @DisplayName("should update scores ignoring case")
+        void shouldIgnoreCase() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.updateScore("brazil", "argentina", 2, 3);
+
+            Match match = scoreboardService.getAllMatches().get(0);
+            assertAll(
+                () -> assertEquals(2, match.getHomeScore()),
+                () -> assertEquals(3, match.getAwayScore())
+            );
+        }
+
+        @Test
+        @DisplayName("should update scores with trimmed team names")
+        void shouldTrimTeamNames() {
+            scoreboardService.startMatch("Mexico", "Germany");
+            scoreboardService.updateScore("Mexico ", " Germany", 3, 3);
+
+            assertEquals(3, scoreboardService.getAllMatches().get(0).getHomeScore());
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = " ")
+        @DisplayName("should reject invalid home team name on update score")
+        void shouldRejectInvalidHomeTeamName(String invalidHome) {
+            scoreboardService.startMatch("Canada", "Brazil");
+
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> scoreboardService.updateScore(invalidHome, "Brazil", 1, 1));
+            assertEquals("Team name cannot be null or empty", exception.getMessage());
+        }
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = " ")
+        @DisplayName("should reject invalid away team name on update score")
+        void shouldRejectInvalidAwayTeamName(String invalidAway) {
+            scoreboardService.startMatch("Canada", "Brazil");
+
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> scoreboardService.updateScore("Canada", invalidAway, 1, 1));
+            assertEquals("Team name cannot be null or empty", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("should not update non existing match")
+        void shouldThrowWhenMatchNotFound() {
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> scoreboardService.updateScore("Canada", "Brazil", 1, 1));
+            assertTrue(exception.getMessage().contains("not found"));
+        }
+
+        @Test
+        @DisplayName("should not update with negative home score")
+        void shouldRejectNegativeHomeScore() {
+            scoreboardService.startMatch("Canada", "Brazil");
+
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> scoreboardService.updateScore("Canada", "Brazil", -1, 1));
+            assertTrue(exception.getMessage().contains("negative"));
+        }
+
+        @Test
+        @DisplayName("should not update with negative away score")
+        void shouldRejectNegativeAwayScore() {
+            scoreboardService.startMatch("Canada", "Brazil");
+
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> scoreboardService.updateScore("Canada", "Brazil", 1, -1));
+            assertTrue(exception.getMessage().contains("negative"));
+        }
     }
 
-    @Test
-    @DisplayName("should add match when startMatch called")
-    void shouldAddMatchWhenStartMatchCalled() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
+    @Nested
+    @DisplayName("Finish Match")
+    class FinishMatch {
 
-        List<Match> matches = scoreBoardService.getAllMatches();
-        assertEquals(1, matches.size(), "Matches list should contain one match after addition");
-    }
+        @Test
+        @DisplayName("should remove match from scoreboard")
+        void shouldRemoveMatch() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.finishMatch("Brazil", "Argentina");
 
-    @Test
-    @DisplayName("should start match with correct team names")
-    void shouldStartMatchWithCorrectTeamNames() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
+            assertEquals(0, scoreboardService.getAllMatches().size());
+        }
 
-        List<Match> matches = scoreBoardService.getAllMatches();
-        Match match = matches.get(0);
+        @Test
+        @DisplayName("should keep other matches when one is finished")
+        void shouldKeepOtherMatches() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.startMatch("Turkey", "Canada");
+            scoreboardService.finishMatch("Turkey", "Canada");
 
-        assertEquals("Brazil", match.getHomeTeam(), "Home team name should be 'Brazil'");
-        assertEquals("Argentina", match.getAwayTeam(), "Away team name should be 'Argentina'");
-    }
+            List<Match> matches = scoreboardService.getAllMatches();
+            assertAll(
+                () -> assertEquals(1, matches.size()),
+                () -> assertEquals("Brazil", matches.get(0).getHomeTeam()),
+                () -> assertEquals("Argentina", matches.get(0).getAwayTeam())
+            );
+        }
 
-    @Test
-    @DisplayName("should reject when home team already has an active match")
-    void shouldRejectWhenHomeTeamAlreadyActive() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
+        @Test
+        @DisplayName("should finish match ignoring case")
+        void shouldIgnoreCase() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.finishMatch("brazil", "argentina");
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> scoreBoardService.startMatch("Brazil", "Canada"));
-        assertTrue(exception.getMessage().contains("already has an active match"));
-    }
+            assertEquals(0, scoreboardService.getAllMatches().size());
+        }
 
-    @Test
-    @DisplayName("should reject when away team already has an active match")
-    void shouldRejectWhenAwayTeamAlreadyActive() {
-        scoreBoardService.startMatch("Turkey", "Canada");
+        @Test
+        @DisplayName("should finish match with trimmed team names")
+        void shouldTrimTeamNames() {
+            scoreboardService.startMatch("Brazil", "Argentina");
+            scoreboardService.finishMatch(" Brazil ", "  Argentina");
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> scoreBoardService.startMatch("Brazil", "Canada"));
-        assertTrue(exception.getMessage().contains("already has an active match"));
-    }
+            assertEquals(0, scoreboardService.getAllMatches().size());
+        }
 
-    @Test
-    @DisplayName("should reject duplicate match")
-    void shouldRejectDuplicateMatch() {
-        scoreBoardService.startMatch("Brazil", "Canada");
+        @Test
+        @DisplayName("should throw when match does not exist")
+        void shouldThrowWhenMatchNotFound() {
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> scoreboardService.finishMatch("Brazil", "Turkey"));
+            assertTrue(exception.getMessage().contains("not found"));
+        }
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> scoreBoardService.startMatch("Brazil", "Canada"));
-        assertTrue(exception.getMessage().contains("already has an active match"));
-    }
+        @Test
+        @DisplayName("should throw when finishing already finished match")
+        void shouldThrowWhenFinishingTwice() {
+            scoreboardService.startMatch("Mexico", "Canada");
+            scoreboardService.finishMatch("Mexico", "Canada");
 
-    @Test
-    @DisplayName("should detect active teams case-insensitively")
-    void shouldDetectActiveTeamsCaseInsensitively() {
-        scoreBoardService.startMatch("Turkey", "brazil");
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> scoreboardService.finishMatch("Mexico", "Canada"));
+            assertTrue(exception.getMessage().contains("not found"));
+        }
 
-        assertAll(
-            () -> assertThrows(IllegalStateException.class,
-                () -> scoreBoardService.startMatch("Brazil", "Canada")),
-            () -> assertThrows(IllegalStateException.class,
-                () -> scoreBoardService.startMatch("Canada", "TURKEY"))
-        );
-    }
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = " ")
+        @DisplayName("should reject invalid home team name")
+        void shouldRejectInvalidHomeTeamName(String invalidHome) {
+            scoreboardService.startMatch("Brazil", "Argentina");
 
-    @Test
-    @DisplayName("should update match scores")
-    void shouldUpdateMatchScores() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.updateScore("Brazil", "Argentina", 2, 3);
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> scoreboardService.finishMatch(invalidHome, "Argentina"));
+            assertEquals("Team name cannot be null or empty", exception.getMessage());
+        }
 
-        Match match = scoreBoardService.getAllMatches().get(0);
-        assertAll(
-            () -> assertEquals(2, match.getHomeScore()),
-            () -> assertEquals(3, match.getAwayScore())
-        );
-    }
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = " ")
+        @DisplayName("should reject invalid away team name")
+        void shouldRejectInvalidAwayTeamName(String invalidAway) {
+            scoreboardService.startMatch("Brazil", "Argentina");
 
-    @Test
-    @DisplayName("should update scores multiple times on same match")
-    void shouldUpdateScoresMultipleTimes() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.updateScore("Brazil", "Argentina", 1, 0);
-        scoreBoardService.updateScore("Brazil", "Argentina", 2, 3);
-
-        Match match = scoreBoardService.getAllMatches().get(0);
-        assertAll(
-            () -> assertEquals(2, match.getHomeScore()),
-            () -> assertEquals(3, match.getAwayScore())
-        );
-    }
-
-    @Test
-    @DisplayName("should update scores ignoring case")
-    void shouldUpdateScoresIgnoringCase() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.updateScore("brazil", "argentina", 2, 3);
-
-        Match match = scoreBoardService.getAllMatches().get(0);
-        assertAll(
-            () -> assertEquals(2, match.getHomeScore()),
-            () -> assertEquals(3, match.getAwayScore())
-        );
-    }
-
-    @Test
-    @DisplayName("should update scores with trimmed team names")
-    void shouldUpdateScoresWithTrimmedTeamNames() {
-        scoreBoardService.startMatch("Mexico", "Germany");
-        scoreBoardService.updateScore("Mexico ", " Germany", 3, 3);
-
-        assertEquals(3, scoreBoardService.getAllMatches().get(0).getHomeScore());
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = " ")
-    @DisplayName("should reject invalid home team name on update score")
-    void shouldRejectInvalidHomeTeamNameOnUpdateScore(String invalidHome) {
-        scoreBoardService.startMatch("Canada", "Brazil");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> scoreBoardService.updateScore(invalidHome, "Brazil", 1, 1));
-        assertEquals("Team name cannot be null or empty", exception.getMessage());
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = " ")
-    @DisplayName("should reject invalid away team name on updateScore")
-    void shouldRejectInvalidAwayTeamNameOnUpdateScore(String invalidAway) {
-        scoreBoardService.startMatch("Canada", "Brazil");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> scoreBoardService.updateScore("Canada", invalidAway, 1, 1));
-        assertEquals("Team name cannot be null or empty", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("should not update non existing match")
-    void shouldNotUpdateNonExistingMatch() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> scoreBoardService.updateScore("Canada", "Brazil", 1, 1));
-        assertTrue(exception.getMessage().contains("not found"));
-    }
-
-    @Test
-    @DisplayName("should not update with negative home score")
-    void shouldNotUpdateWithNegativeHomeScore() {
-        scoreBoardService.startMatch("Canada", "Brazil");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> scoreBoardService.updateScore("Canada", "Brazil", -1, 1));
-        assertTrue(exception.getMessage().contains("negative"));
-    }
-
-    @Test
-    @DisplayName("should not update with negative away score")
-    void shouldNotUpdateWithNegativeAwayScore() {
-        scoreBoardService.startMatch("Canada", "Brazil");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> scoreBoardService.updateScore("Canada", "Brazil", 1, -1));
-        assertTrue(exception.getMessage().contains("negative"));
-    }
-
-    @Test
-    @DisplayName("should remove match from scoreboard")
-    void shouldRemoveMatch() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.finishMatch("Brazil", "Argentina");
-
-        assertEquals(0, scoreBoardService.getAllMatches().size());
-    }
-
-    @Test
-    @DisplayName("should keep other matches when one is finished")
-    void shouldKeepOtherMatchesWhenFinishingMatch() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.startMatch("Turkey", "Canada");
-        scoreBoardService.finishMatch("Turkey", "Canada");
-
-        List<Match> matches = scoreBoardService.getAllMatches();
-        assertAll(
-            () -> assertEquals(1, matches.size()),
-            () -> assertEquals("Brazil", matches.get(0).getHomeTeam()),
-            () -> assertEquals("Argentina", matches.get(0).getAwayTeam())
-        );
-    }
-
-    @Test
-    @DisplayName("should finish match ignoring case")
-    void shouldFinishMatchIgnoringCase() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.finishMatch("brazil", "argentina");
-
-        assertEquals(0, scoreBoardService.getAllMatches().size());
-    }
-
-    @Test
-    @DisplayName("should finish match with trimmed team names")
-    void shouldFinishMatchWithTrimmedTeamNames() {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-        scoreBoardService.finishMatch(" Brazil ", "  Argentina");
-
-        assertEquals(0, scoreBoardService.getAllMatches().size());
-    }
-
-    @Test
-    @DisplayName("should throw when match does not exist")
-    void shouldThrowWhenMatchNotFound() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> scoreBoardService.finishMatch("Brazil", "Turkey"));
-        assertTrue(exception.getMessage().contains("not found"));
-    }
-
-    @Test
-    @DisplayName("should throw when finishing already finished match")
-    void shouldThrowWhenFinishingAlreadyFinished() {
-        scoreBoardService.startMatch("Mexico", "Canada");
-        scoreBoardService.finishMatch("Mexico", "Canada");
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-            () -> scoreBoardService.finishMatch("Mexico", "Canada"));
-        assertTrue(exception.getMessage().contains("not found"));
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = " ")
-    @DisplayName("should reject invalid home team name")
-    void shouldRejectInvalidHomeTeamName(String invalidHome) {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> scoreBoardService.finishMatch(invalidHome, "Argentina"));
-        assertEquals("Team name cannot be null or empty", exception.getMessage());
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = " ")
-    @DisplayName("should reject invalid away team name")
-    void shouldRejectInvalidAwayTeamName(String invalidAway) {
-        scoreBoardService.startMatch("Brazil", "Argentina");
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> scoreBoardService.finishMatch("Brazil", invalidAway));
-        assertEquals("Team name cannot be null or empty", exception.getMessage());
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> scoreboardService.finishMatch("Brazil", invalidAway));
+            assertEquals("Team name cannot be null or empty", exception.getMessage());
+        }
     }
 }
