@@ -2,6 +2,7 @@ package org.scoreboard.service;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -83,5 +84,54 @@ public class ScoreboardServiceTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class,
             () -> scoreBoardService.startMatch("Brazil", "Canada"));
         assertTrue(exception.getMessage().contains("already has an active match"));
+    }
+
+    @Test
+    @DisplayName("should update match scores")
+    void shouldUpdateMatchScores() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.updateScore("Brazil", "Argentina", 2, 3);
+
+        Match match = scoreBoardService.getAllMatches().get(0);
+        assertAll(
+            () -> assertEquals(2, match.getHomeScore()),
+            () -> assertEquals(3, match.getAwayScore())
+        );
+    }
+
+    @Test
+    @DisplayName("should update scores multiple times on same match")
+    void shouldUpdateScoresMultipleTimes() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.updateScore("Brazil", "Argentina", 1, 0);
+        scoreBoardService.updateScore("Brazil", "Argentina", 2, 3);
+
+        Match match = scoreBoardService.getAllMatches().get(0);
+        assertAll(
+            () -> assertEquals(2, match.getHomeScore()),
+            () -> assertEquals(3, match.getAwayScore())
+        );
+    }
+
+    @Test
+    @DisplayName("should update scores ignoring case")
+    void shouldUpdateScoresIgnoringCase() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.updateScore("brazil", "argentina", 2, 3);
+
+        Match match = scoreBoardService.getAllMatches().get(0);
+        assertAll(
+            () -> assertEquals(2, match.getHomeScore()),
+            () -> assertEquals(3, match.getAwayScore())
+        );
+    }
+
+    @Test
+    @DisplayName("should update scores with trimmed team names")
+    void shouldUpdateScoresWithTrimmedTeamNames() {
+        scoreBoardService.startMatch("Mexico", "Germany");
+        scoreBoardService.updateScore("Mexico ", " Germany", 3, 3);
+
+        assertEquals(3, scoreBoardService.getAllMatches().get(0).getHomeScore());
     }
 }

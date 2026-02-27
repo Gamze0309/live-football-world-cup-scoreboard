@@ -3,6 +3,8 @@ package org.scoreboard.model;
 public class Match {
     private final String homeTeam;
     private final String awayTeam;
+    private int homeScore;
+    private int awayScore;
 
     public Match(String homeTeam, String awayTeam) {
         String normalizedHomeTeam = validateAndNormalizeTeamName(homeTeam);
@@ -14,6 +16,13 @@ public class Match {
         this.awayTeam = normalizedAwayTeam;
     }
 
+    public Match(String homeTeam, String awayTeam, int homeScore, int awayScore) {
+        this.homeTeam = homeTeam;
+        this.awayTeam = awayTeam;
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
+    }
+
     public String getHomeTeam() {
         return homeTeam;
     }
@@ -23,11 +32,11 @@ public class Match {
     }
 
     public int getHomeScore() {
-        return 0;
+        return homeScore;
     }
 
     public int getAwayScore() {
-        return 0;
+        return awayScore;
     }
 
     public static String validateAndNormalizeTeamName(String name) {

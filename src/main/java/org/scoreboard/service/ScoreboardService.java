@@ -27,4 +27,17 @@ public class ScoreboardService {
         Match match = new Match(homeTeam, awayTeam);
         matches.add(match);
     }
+
+    public void updateScore(String homeTeam, String awayTeam, int homeScore, int awayScore) {
+        String normalizedHome = Match.validateAndNormalizeTeamName(homeTeam);
+        String normalizedAway = Match.validateAndNormalizeTeamName(awayTeam);
+
+        for (int i = 0; i < matches.size(); i++) {
+            if (normalizedHome.equalsIgnoreCase(matches.get(i).getHomeTeam()) &&
+                normalizedAway.equalsIgnoreCase(matches.get(i).getAwayTeam())) {
+                    matches.set(i, new Match(normalizedHome, normalizedAway, homeScore, awayScore));
+                return;
+            }
+        }
+    }
 }
