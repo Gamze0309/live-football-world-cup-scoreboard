@@ -47,4 +47,18 @@ public class ScoreboardService {
 
         throw new IllegalStateException("Match between " + homeTeam + " and " + awayTeam + " not found");
     }
+
+    public void finishMatch(String homeTeam, String awayTeam) {
+
+        String normalizedHome = Match.validateAndNormalizeTeamName(homeTeam);
+        String normalizedAway = Match.validateAndNormalizeTeamName(awayTeam);
+
+        for (int i = 0; i < matches.size(); i++) {
+            if (normalizedHome.equalsIgnoreCase(matches.get(i).getHomeTeam()) &&
+                normalizedAway.equalsIgnoreCase(matches.get(i).getAwayTeam())) {
+                    matches.remove(i);
+                    return;
+            }
+        }
+    }
 }

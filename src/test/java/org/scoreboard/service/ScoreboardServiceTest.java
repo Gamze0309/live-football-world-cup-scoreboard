@@ -202,4 +202,46 @@ public class ScoreboardServiceTest {
             () -> scoreBoardService.updateScore("Canada", "Brazil", 1, -1));
         assertTrue(exception.getMessage().contains("negative"));
     }
+
+    @Test
+    @DisplayName("should remove match from scoreboard")
+    void shouldRemoveMatch() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.finishMatch("Brazil", "Argentina");
+
+        assertEquals(0, scoreBoardService.getAllMatches().size());
+    }
+
+    @Test
+    @DisplayName("should keep other matches when one is finished")
+    void shouldKeepOtherMatchesWhenFinishingMatch() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.startMatch("Turkey", "Canada");
+        scoreBoardService.finishMatch("Turkey", "Canada");
+
+        List<Match> matches = scoreBoardService.getAllMatches();
+        assertAll(
+            () -> assertEquals(1, matches.size()),
+            () -> assertEquals("Brazil", matches.get(0).getHomeTeam()),
+            () -> assertEquals("Argentina", matches.get(0).getAwayTeam())
+        );
+    }
+
+    @Test
+    @DisplayName("should finish match ignoring case")
+    void shouldFinishMatchIgnoringCase() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.finishMatch("brazil", "argentina");
+
+        assertEquals(0, scoreBoardService.getAllMatches().size());
+    }
+
+    @Test
+    @DisplayName("should finish match with trimmed team names")
+    void shouldFinishMatchWithTrimmedTeamNames() {
+        scoreBoardService.startMatch("Brazil", "Argentina");
+        scoreBoardService.finishMatch(" Brazil ", "  Argentina");
+
+        assertEquals(0, scoreBoardService.getAllMatches().size());
+    }
 }
