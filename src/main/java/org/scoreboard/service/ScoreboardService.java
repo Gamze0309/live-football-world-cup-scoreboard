@@ -29,6 +29,11 @@ public class ScoreboardService {
     }
 
     public void updateScore(String homeTeam, String awayTeam, int homeScore, int awayScore) {
+        
+        if (homeScore < 0 || awayScore < 0) {
+            throw new IllegalArgumentException("Scores cannot be negative");
+        }
+        
         String normalizedHome = Match.validateAndNormalizeTeamName(homeTeam);
         String normalizedAway = Match.validateAndNormalizeTeamName(awayTeam);
 
@@ -39,5 +44,7 @@ public class ScoreboardService {
                 return;
             }
         }
+
+        throw new IllegalStateException("Match between " + homeTeam + " and " + awayTeam + " not found");
     }
 }
